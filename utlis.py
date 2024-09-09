@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 
 
+
 ## TO STACK ALL THE IMAGES IN ONE WINDOW
 def stackImages(imgArray, scale, lables=[]):
     rows = len(imgArray)
@@ -62,7 +63,7 @@ def biggestContour(contours):
     max_area = 0
     for i in contours:
         area = cv2.contourArea(i)
-        if area > 50000:
+        if area > 100000:
             peri = cv2.arcLength(i, True)
             approx = cv2.approxPolyDP(i, 0.02 * peri, True)
             if area > max_area and len(approx) == 4:
@@ -87,15 +88,118 @@ def nothing(x):
 def initializeTrackbars(intialTracbarVals=0):
     cv2.namedWindow("Trackbars")
     cv2.resizeWindow("Trackbars", 360, 240)
-    cv2.createTrackbar("Threshold1", "Trackbars", 80, 255, nothing)
-    cv2.createTrackbar("Threshold2", "Trackbars", 185, 255, nothing)
-    cv2.createTrackbar("Threshold3", "Trackbars", 2, 20, nothing)
+    cv2.createTrackbar("Threshold1", "Trackbars", 225, 255, nothing)
+    cv2.createTrackbar("Threshold2", "Trackbars", 109, 255, nothing)
 
 
 
 def valTrackbars():
     Threshold1 = cv2.getTrackbarPos("Threshold1", "Trackbars")
     Threshold2 = cv2.getTrackbarPos("Threshold2", "Trackbars")
-    Threshold3 = cv2.getTrackbarPos("Threshold3", "Trackbars")
-    src = Threshold1, Threshold2, Threshold3
-    return src
+
+    return Threshold1,Threshold2
+
+
+def find_rectangular_contours(image, contours):
+    rect_contours = []  # Danh sách lưu các contour hình chữ nhật
+
+    for contour in contours:
+        if cv2.contourArea(contour) >20000 and cv2.contourArea(contour) < 300000:
+            # Tính chu vi của contour
+            peri = cv2.arcLength(contour, True)
+            # Xấp xỉ hình dạng của contour
+            approx = cv2.approxPolyDP(contour, 0.02 * peri, True)
+
+            # Kiểm tra xem contour có 4 cạnh và diện tích lớn hơn một giá trị ngưỡng không
+            if len(approx) == 4 or len(approx)==5:  # Hình chữ nhật sẽ có 4 đỉnh
+                rect_contours.append(contour)
+
+    # Vẽ các contour hình chữ nhật lên ảnh
+    img_rectangles = image.copy()
+    cv2.drawContours(img_rectangles, rect_contours, -1, (0, 255, 0), 4)
+
+    return img_rectangles, rect_contours
+
+
+def draw_contours_and_display_areas(image, contours):
+    # Tạo bản sao của hình ảnh để vẽ contours
+    output_image = image.copy()
+
+    for contour in contours:
+        # Tính diện tích của contour chính
+        contour_area = cv2.contourArea(contour)
+
+        # Vẽ contour chính trên hình ảnh
+        cv2.drawContours(output_image, [contour], -1, (0, 255, 0), 2)
+
+        # Hiển thị diện tích của contour chính
+        x, y, w, h = cv2.boundingRect(contour)
+        cv2.putText(output_image, f'Area: {contour_area:.2f}', (x, y+100),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1)
+
+        # Tìm các contour con bên trong contour chính
+
+
+    return output_image
+
+def phanloaidapan(contours):
+    phan1_contours = []
+    phan2_contours =[]
+    phan3_contours =[]
+    for contour in contours:
+        if cv2.contourArea(contour) >44000 and cv2.contourArea(contour) < 45000:
+            phan1_contours.append(contour)
+        elif cv2.contourArea(contour) >25000 and cv2.contourArea(contour) < 27000:
+            phan2_contours.append(contour)
+        elif cv2.contourArea(contour) >200000:
+            phan3_contours.append(contour)
+    return phan1_contours, phan2_contours, phan3_contours
+
+def loccontour(contours):
+    filtered_contours=[]
+
+    threshold=200
+    for i in range(len(contours)):
+        # Lấy bounding box cho contour hiện tại
+        x1, y1, w1, h1 = cv2.boundingRect(contours[i])
+
+        # Kiểm tra xem contour hiện tại có gần tương đương với contour nào khác không
+        similar = False
+        for j in range(i + 1, len(contours)):
+            # Lấy bounding box cho contour tiếp theo
+            x2, y2, w2, h2 = cv2.boundingRect(contours[j])
+
+            # So sánh vị trí và kích thước giữa hai bounding boxes
+            if abs(x1 - x2) < threshold and abs(y1 - y2) < threshold and abs(w1 - w2) < threshold and abs(
+                    h1 - h2) < threshold:
+                similar = True
+                break
+        if not similar:
+            filtered_contours.append(contours[i])
+        for i in range(0,len(filtered_contours)):
+            x1, y1, w1, h1 = cv2.boundingRect(filtered_contours[i])
+            for j in range(i+1, len(filtered_contours)):
+                x2, y2, w2, h2 = cv2.boundingRect(filtered_contours[j])
+                if x1 > x2:
+                    temp=filtered_contours[i]
+                    filtered_contours[i]=filtered_contours[j]
+                    filtered_contours[j] = temp
+
+    return filtered_contours
+
+
+def catanh(img,contours):
+    crop_image=[]
+    for contour in contours:
+        x, y, w, h = cv2.boundingRect(contour)
+        crop_image.append(img[y:y+h, x:x+w])
+    return crop_image
+def catanh3(img,contour):
+    crop_image=[]
+    x, y, w, h = cv2.boundingRect(contour[0])
+    img = img[y:y + h, x:x + w]
+    newWidth = img.shape[1] // 6
+    for i in range(0,6):
+        croped_image=img[:,newWidth*i:newWidth*(i+1)]
+        crop_image.append(croped_image)
+    return crop_image

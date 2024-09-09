@@ -3,9 +3,9 @@ import numpy as np
 import utlis
 
 ########################################################################
-webCamFeed = True
-pathImage =r"C:\Users\Qs\PycharmProjects\ORM\.venv\TEST\Picture\z5810483368481_97112c0ad2e60f35b9367855d02ef663.jpg"
-cap = cv2.VideoCapture('http://192.168.31.238:8080/video')
+webCamFeed = False
+pathImage =r"Picture\1688456564102.JPEG"
+cap = cv2.VideoCapture(0)
 cap.set(10, 160)
 threshhold1=255
 threshhold2=100
@@ -28,7 +28,7 @@ while True:
     imgGray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)  # CONVERT IMAGE TO GRAY SCALE
     imgBlur = cv2.GaussianBlur(imgGray, (5, 5), 1)  # ADD GAUSSIAN BLUR
     thres = utlis.valTrackbars()# GET TRACK BAR VALUES FOR THRESHOLDS
-    imgThreshold = cv2.Canny(imgBlur, threshhold1, threshhold2)  # APPLY CANNY BLUR
+    imgThreshold = cv2.Canny(imgBlur, thres[0], thres[1])  # APPLY CANNY BLUR
     kernel = np.ones((5, 5))
     imgDial = cv2.dilate(imgThreshold, kernel, iterations=2)  # APPLY DILATION
     imgThreshold = cv2.erode(imgDial, kernel, iterations=2)  # APPLY EROSION
@@ -69,6 +69,7 @@ while True:
     else:
         imageArray = ([img, imgGray, imgThreshold, imgContours],
                       [imgBlank, imgBlank, imgBlank, imgBlank])
+        threshhold2 +=10
 
     # LABELS FOR DISPLAY
     lables = [["Original", "Gray", "Threshold", "Contours"],
@@ -77,17 +78,10 @@ while True:
     stackedImage = utlis.stackImages(imageArray,0.4, lables)
     cv2.imshow("Result", stackedImage)
     while np.array_equal(imgBigContour,imgBlank):
-        threshhold2 += 5
+        threshhold2 += 1
     imgWarpGray = cv2.resize(imgWarpGray, (720, 1018))
     cv2.imshow("SHOW", imgWarpGray)
-
-    # SAVE IMAGE WHEN 's' key is pressed
-    if cv2.waitKey(1) & 0xFF == ord('s'):
-        cv2.imwrite("Scanned/myImage" + str(count) + ".jpg", imgWarpColored)
-        cv2.rectangle(stackedImage, ((int(stackedImage.shape[1] / 2) - 230), int(stackedImage.shape[0] / 2) + 50),
-                      (1100, 350), (0, 255, 0), cv2.FILLED)
-        cv2.putText(stackedImage, "Scan Saved", (int(stackedImage.shape[1] / 2) - 200, int(stackedImage.shape[0] / 2)),
-                    cv2.FONT_HERSHEY_DUPLEX, 3, (0, 0, 255), 5, cv2.LINE_AA)
-        cv2.imshow('Result', stackedImage)
-        cv2.waitKey(300)
-        count += 1
+    cv2.waitKey(0)
+ 
+    
+   
